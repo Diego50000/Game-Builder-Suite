@@ -1,0 +1,115 @@
+/* global.css — shared variables and base styles */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+:root {
+  --grass:     #4a7c3f;
+  --grass-top: #5a9e4f;
+  --dirt:      #8B5E3C;
+  --stone:     #7a7a7a;
+  --wood:      #6B4423;
+  --leaves:    #2D5A1B;
+  --sky:       #87CEEB;
+  --night:     #0a0a1a;
+
+  --bg:        #0d1117;
+  --bg2:       #161b22;
+  --bg3:       #21262d;
+  --border:    #30363d;
+  --text:      #e6edf3;
+  --text-muted:#8b949e;
+  --accent:    #4a7c3f;
+  --accent2:   #58a646;
+  --danger:    #da3633;
+  --gold:      #d4a017;
+
+  --font-pixel: 'Press Start 2P', monospace;
+  --font-body:  'VT323', monospace;
+
+  --radius:    4px;
+  --radius-lg: 8px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 20px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+a {
+  color: var(--accent2);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: var(--text);
+}
+
+/* Buttons */
+.btn-primary {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding: 14px 28px;
+  border: 3px solid var(--accent2);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  text-decoration: none;
+  image-rendering: pixelated;
+  box-shadow: 4px 4px 0 #2a4a25;
+}
+
+.btn-primary:hover {
+  background: var(--accent2);
+  transform: translateY(-2px);
+  box-shadow: 4px 6px 0 #2a4a25;
+  color: #fff;
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: 2px 2px 0 #2a4a25;
+}
+
+.btn-secondary {
+  display: inline-block;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding: 14px 28px;
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  text-decoration: none;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.btn-secondary:hover {
+  border-color: var(--text-muted);
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.btn-large {
+  font-size: 12px;
+  padding: 18px 40px;
+}
