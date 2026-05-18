@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CraftWorld</title>
+  <link rel="stylesheet" href="css/global.css" />
+  <link rel="stylesheet" href="css/index.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- Animated background canvas (pixel/block rain effect) -->
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- Floating block particles -->
+  <div class="particles" id="particles"></div>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav-logo">⛏ CraftWorld</div>
+    <div class="nav-links">
+      <a href="login.html">Login</a>
+      <a href="register.html" class="btn-nav">Play Free</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-tag">🌍 Open World Sandbox</div>
+      <h1 class="hero-title">
+        <span class="title-line1">CRAFT</span>
+        <span class="title-line2">WORLD</span>
+      </h1>
+      <p class="hero-subtitle">
+        Mine, build, and survive in a 3D world. Create custom mobs with AI.<br />
+        Your world. Your rules.
+      </p>
+      <div class="hero-buttons">
+        <a href="register.html" class="btn-primary">▶ Play Now</a>
+        <a href="login.html" class="btn-secondary">Sign In</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-num">3D</span>
+          <span class="stat-label">World</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-num">AI</span>
+          <span class="stat-label">Mob Creator</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-num">∞</span>
+          <span class="stat-label">Possibilities</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3D Block stack illustration -->
+    <div class="hero-visual">
+      <div class="block-stack">
+        <div class="block b-grass">
+          <div class="block-face top"></div>
+          <div class="block-face front"></div>
+          <div class="block-face right"></div>
+        </div>
+        <div class="block b-dirt" style="top: 64px;">
+          <div class="block-face top"></div>
+          <div class="block-face front"></div>
+          <div class="block-face right"></div>
+        </div>
+        <div class="block b-stone" style="top: 128px;">
+          <div class="block-face top"></div>
+          <div class="block-face front"></div>
+          <div class="block-face right"></div>
+        </div>
+        <div class="block b-wood" style="top: 192px; left: 80px;">
+          <div class="block-face top"></div>
+          <div class="block-face front"></div>
+          <div class="block-face right"></div>
+        </div>
+        <!-- Tree trunk -->
+        <div class="tree-trunk"></div>
+        <div class="tree-leaves"></div>
+        <!-- Zombie mob -->
+        <div class="mob zombie-mob">🧟</div>
+        <div class="mob cow-mob">🐄</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features">
+    <h2 class="section-title">What Awaits You</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⛏️</div>
+        <h3>Mine & Build</h3>
+        <p>Dig through grass, dirt, and stone. Collect resources and shape your world block by block.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌄</div>
+        <h3>Explore Terrain</h3>
+        <p>Procedurally generated hills, valleys, and forests. Every world is unique.</p>
+      </div>
+      <div class="feature-card feature-card--highlight">
+        <div class="feature-badge">AI Powered</div>
+        <div class="feature-icon">🧬</div>
+        <h3>Create Custom Mobs</h3>
+        <p>Describe any creature and our AI generates it with real stats, drops, and behavior in your world.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧟</div>
+        <h3>Survive the Night</h3>
+        <p>Zombies roam with real A* pathfinding. They'll hunt you down — don't get caught.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🏆</div>
+        <h3>Earn Achievements</h3>
+        <p>Track your progress, unlock badges, and show off your stats on your profile.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👥</div>
+        <h3>Player Profiles</h3>
+        <p>Build your collection of custom mobs and climb the leaderboard.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <h2>Ready to start mining?</h2>
+    <p>Create your free account and jump in within seconds.</p>
+    <a href="register.html" class="btn-primary btn-large">Create Account — It's Free</a>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-logo">⛏ CraftWorld</div>
+    <div class="footer-links">
+      <a href="login.html">Login</a>
+      <a href="register.html">Register</a>
+      <a href="game.html">Play</a>
+      <a href="admin.html">Admin</a>
+    </div>
+    <p class="footer-copy">© 2025 CraftWorld · Built for Web Design Class</p>
+  </footer>
+
+  <script src="js/index.js"></script>
+</body>
+</html>
