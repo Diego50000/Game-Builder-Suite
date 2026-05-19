@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CraftWorld — Login</title>
+  <link rel="stylesheet" href="css/global.css" />
+  <link rel="stylesheet" href="css/login.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- Animated background -->
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">⛏ CraftWorld</a>
+  </nav>
+
+  <!-- Login Card -->
+  <main class="auth-wrapper">
+    <div class="auth-card">
+
+      <div class="auth-icon">⛏️</div>
+      <h1 class="auth-title">Welcome Back</h1>
+      <p class="auth-sub">Sign in to your world</p>
+
+      <!-- Error / Success messages -->
+      <div class="msg msg--error" id="error-msg" style="display:none;"></div>
+      <div class="msg msg--success" id="success-msg" style="display:none;"></div>
+
+      <div class="auth-form">
+        <div class="field">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            placeholder="Enter your username"
+            autocomplete="username"
+          />
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+          />
+        </div>
+
+        <button class="btn-primary btn-full" id="login-btn" onclick="handleLogin()">
+          ▶ Sign In
+        </button>
+      </div>
+
+      <p class="auth-switch">
+        Don't have an account? <a href="register.html">Register here</a>
+      </p>
+
+      <!-- Demo hint -->
+      <div class="demo-hint">
+        <span>Demo: </span>
+        <code>admin</code> / <code>admin123</code>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="js/auth.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

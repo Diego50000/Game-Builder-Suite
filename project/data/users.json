@@ -1,0 +1,109 @@
+{
+  "users": [
+    {
+      "id": "user_001",
+      "username": "admin",
+      "email": "admin@craftworld.com",
+      "password": "admin123",
+      "role": "admin",
+      "createdAt": "2025-01-01",
+      "profile": {
+        "avatar": "⛏️",
+        "bio": "Admin of CraftWorld",
+        "favoriteBlock": "stone",
+        "worldName": "Admin World",
+        "xp": 9999,
+        "level": 99,
+        "playtime": 3600,
+        "blocksMined": 10000,
+        "zombiesKilled": 500,
+        "customMobs": [],
+        "achievements": ["first_block", "zombie_slayer", "deep_miner"]
+      }
+    },
+    {
+      "id": "user_002",
+      "username": "Steve",
+      "email": "steve@craftworld.com",
+      "password": "steve123",
+      "role": "player",
+      "createdAt": "2025-01-05",
+      "profile": {
+        "avatar": "🧑",
+        "bio": "Just a regular miner",
+        "favoriteBlock": "grass",
+        "worldName": "Steve's World",
+        "xp": 340,
+        "level": 5,
+        "playtime": 720,
+        "blocksMined": 412,
+        "zombiesKilled": 18,
+        "customMobs": [],
+        "achievements": ["first_block", "lumberjack"]
+      }
+    },
+    {
+      "id": "user_003",
+      "username": "Alex",
+      "email": "alex@craftworld.com",
+      "password": "alex123",
+      "role": "player",
+      "createdAt": "2025-01-08",
+      "profile": {
+        "avatar": "🧙",
+        "bio": "I love building tall towers",
+        "favoriteBlock": "wood",
+        "worldName": "Alex Tower",
+        "xp": 870,
+        "level": 11,
+        "playtime": 1800,
+        "blocksMined": 950,
+        "zombiesKilled": 63,
+        "customMobs": [],
+        "achievements": ["first_block", "zombie_slayer", "lumberjack", "mob_creator"]
+      }
+    },
+    {
+      "id": "user_004",
+      "username": "Creeper",
+      "email": "creeper@craftworld.com",
+      "password": "boom123",
+      "role": "player",
+      "createdAt": "2025-01-12",
+      "profile": {
+        "avatar": "💚",
+        "bio": "SSSSS...",
+        "favoriteBlock": "stone",
+        "worldName": "Boom Land",
+        "xp": 120,
+        "level": 2,
+        "playtime": 300,
+        "blocksMined": 88,
+        "zombiesKilled": 4,
+        "customMobs": [],
+        "achievements": ["first_block"]
+      }
+    },
+    {
+      "id": "user_005",
+      "username": "Notch",
+      "email": "notch@craftworld.com",
+      "password": "notch123",
+      "role": "player",
+      "createdAt": "2025-01-15",
+      "profile": {
+        "avatar": "👑",
+        "bio": "The original block master",
+        "favoriteBlock": "dirt",
+        "worldName": "The Original World",
+        "xp": 5500,
+        "level": 50,
+        "playtime": 7200,
+        "blocksMined": 9999,
+        "zombiesKilled": 300,
+        "customMobs": [],
+        "achievements": ["first_block", "zombie_slayer", "deep_miner", "survivor", "mob_creator", "lumberjack"]
+      }
+    }
+  ]
+}
