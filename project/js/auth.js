@@ -21,7 +21,7 @@ function logout() {
 // ── Register ──────────────────────────────────────────────────────────────────
 async function registerUser(username, email, password) {
   try {
-    const res = await fetch(API + '/api/register', {
+    const res = await fetch(API + '/game/register', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ username, email, password })
@@ -37,7 +37,7 @@ async function registerUser(username, email, password) {
 // ── Login ─────────────────────────────────────────────────────────────────────
 async function loginUser(username, password) {
   try {
-    const res = await fetch(API + '/api/login', {
+    const res = await fetch(API + '/game/login', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ username, password })
@@ -53,7 +53,7 @@ async function loginUser(username, password) {
 // ── Update profile ────────────────────────────────────────────────────────────
 async function updateProfile(userId, profileData) {
   try {
-    const res = await fetch(API + '/api/update-profile', {
+    const res = await fetch(API + '/game/update-profile', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ id: userId, profile: profileData })
@@ -69,7 +69,7 @@ async function updateProfile(userId, profileData) {
 // ── Save mob ──────────────────────────────────────────────────────────────────
 async function saveMob(userId, mob) {
   try {
-    const res = await fetch(API + '/api/save-mob', {
+    const res = await fetch(API + '/game/save-mob', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ userId, mob })

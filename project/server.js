@@ -43,15 +43,15 @@ function writeUsers(users) {
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
-// GET /api/users — admin only, returns all users (no passwords)
-app.get('/api/users', (req, res) => {
+// GET /game/users — admin only, returns all users (no passwords)
+app.get('/game/users', (req, res) => {
   const users = readUsers();
   const safe  = users.map(({ password, ...rest }) => rest);
   res.json({ success: true, users: safe });
 });
 
-// POST /api/register
-app.post('/api/register', (req, res) => {
+// POST /game/register
+app.post('/game/register', (req, res) => {
   const { username, email, password } = req.body;
 
   if (!username || !email || !password) {
@@ -110,8 +110,8 @@ app.post('/api/register', (req, res) => {
   res.json({ success: true, user: safeUser });
 });
 
-// POST /api/login
-app.post('/api/login', (req, res) => {
+// POST /game/login
+app.post('/game/login', (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -131,8 +131,8 @@ app.post('/api/login', (req, res) => {
   res.json({ success: true, user: safeUser });
 });
 
-// POST /api/update-profile — save profile changes
-app.post('/api/update-profile', (req, res) => {
+// POST /game/update-profile — save profile changes
+app.post('/game/update-profile', (req, res) => {
   const { id, profile } = req.body;
 
   if (!id) {
@@ -153,8 +153,8 @@ app.post('/api/update-profile', (req, res) => {
   res.json({ success: true, user: safeUser });
 });
 
-// POST /api/save-mob — save a custom AI mob to a user's profile
-app.post('/api/save-mob', (req, res) => {
+// POST /game/save-mob — save a custom AI mob to a user's profile
+app.post('/game/save-mob', (req, res) => {
   const { userId, mob } = req.body;
 
   if (!userId || !mob) {
@@ -176,8 +176,8 @@ app.post('/api/save-mob', (req, res) => {
   res.json({ success: true, mob });
 });
 
-// POST /api/admin/update-user — admin updates a user's role or data
-app.post('/api/admin/update-user', (req, res) => {
+// POST /game/admin/update-user — admin updates a user's role or data
+app.post('/game/admin/update-user', (req, res) => {
   const { adminId, targetId, updates } = req.body;
 
   const users = readUsers();
