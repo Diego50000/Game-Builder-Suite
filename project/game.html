@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CraftWorld — Play</title>
+  <link rel="stylesheet" href="css/global.css" />
+  <link rel="stylesheet" href="css/game.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <nav class="game-nav">
+    <span class="nav-logo">⛏ CraftWorld</span>
+    <div class="nav-right">
+      <span id="nav-username" class="nav-user"></span>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="game-wrapper">
+    <canvas id="game-canvas"></canvas>
+    <div id="game-ui">
+      <div id="hud">
+        <span id="hud-user"></span>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/game/main.js"></script>
+  <script>
+    const user = requireAuth();
+    if (user) {
+      document.getElementById('nav-username').textContent = user.username;
+      document.getElementById('hud-user').textContent = '👤 ' + user.username;
+    }
+  </script>
+</body>
+</html>
