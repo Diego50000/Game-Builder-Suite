@@ -6,19 +6,17 @@
   <title>CraftWorld — Register</title>
   <link rel="stylesheet" href="css/global.css" />
   <link rel="stylesheet" href="css/login.css" />
+  <link rel="stylesheet" href="css/register.css" />
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
 </head>
 <body>
 
-  <!-- Animated background -->
   <canvas id="bg-canvas"></canvas>
 
-  <!-- Nav -->
   <nav class="nav">
     <a href="index.html" class="nav-logo">⛏ CraftWorld</a>
   </nav>
 
-  <!-- Register Card -->
   <main class="auth-wrapper">
     <div class="auth-card">
 
@@ -26,11 +24,10 @@
       <h1 class="auth-title">Create Account</h1>
       <p class="auth-sub">Start your adventure</p>
 
-      <!-- Error / Success messages -->
       <div class="msg msg--error" id="error-msg" style="display:none;"></div>
       <div class="msg msg--success" id="success-msg" style="display:none;"></div>
 
-      <div class="auth-form">
+      <form id="register-form">
         <div class="field">
           <label for="username">Username</label>
           <input
@@ -40,7 +37,7 @@
             maxlength="20"
             autocomplete="username"
           />
-          <span class="field-hint">Letters and numbers only, max 20 chars</span>
+          <span class="field-hint">Letters, numbers and underscores only, max 20 chars</span>
         </div>
 
         <div class="field">
@@ -58,7 +55,7 @@
           <input
             type="password"
             id="password"
-            placeholder="Create a password"
+            placeholder="Create a password (min 4 chars)"
             autocomplete="new-password"
           />
         </div>
@@ -73,10 +70,10 @@
           />
         </div>
 
-        <button class="btn-primary btn-full" id="register-btn" onclick="handleRegister()">
+        <button type="submit" class="btn-primary btn-full" id="register-btn">
           ⛏ Create Account
         </button>
-      </div>
+      </form>
 
       <p class="auth-switch">
         Already have an account? <a href="login.html">Sign in here</a>
