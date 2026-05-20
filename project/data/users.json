@@ -1,1 +1,21 @@
-{ "users": [] }
+{
+  "users": [
+    {
+      "id": "user_1779300813838",
+      "username": "SuperToady",
+      "email": "394212@guhsd.net",
+      "password": "1111",
+      "role": "player",
+      "createdAt": "2026-05-20",
+      "profile": {
+        "avatar": "🧑",
+        "bio": "",
+        "playtime": 0,
+        "blocksMined": 0,
+        "zombiesKilled": 0,
+        "customMobs": [],
+        "achievements": []
+      }
+    }
+  ]
+}
