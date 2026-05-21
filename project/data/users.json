@@ -16,6 +16,23 @@
         "customMobs": [],
         "achievements": []
       }
+    },
+    {
+      "id": "user_1779388631222",
+      "username": "SUP",
+      "email": "3@gmail.com",
+      "password": "1234",
+      "role": "player",
+      "createdAt": "2026-05-21",
+      "profile": {
+        "avatar": "🧑",
+        "bio": "",
+        "playtime": 0,
+        "blocksMined": 0,
+        "zombiesKilled": 0,
+        "customMobs": [],
+        "achievements": []
+      }
     }
   ]
 }
