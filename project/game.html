@@ -1,40 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CraftWorld — Play</title>
+  <title>CraftWorld — 3D Game</title>
   <link rel="stylesheet" href="css/global.css" />
-  <link rel="stylesheet" href="css/game.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #game-container { width: 100vw; height: 100vh; }
+    #world-grid { display: none; } /* Hide the 2D grid */
+  </style>
+  <!-- Load Three.js from a CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+  <!-- Optional: Add OrbitControls for camera movement -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-
-  <nav class="game-nav">
-    <span class="nav-logo">⛏ CraftWorld</span>
-    <div class="nav-right">
-      <span id="nav-username" class="nav-user"></span>
-      <button class="btn-logout" onclick="logout()">Logout</button>
-    </div>
+  <nav>
+    <a href="index.html">⛏ CraftWorld</a>
+    <a href="profile.html">My Profile</a>
   </nav>
-
-  <div class="game-wrapper">
-    <canvas id="game-canvas"></canvas>
-    <div id="game-ui">
-      <div id="hud">
-        <span id="hud-user"></span>
-      </div>
-    </div>
+  <div id="game-container">
+    <!-- Three.js will render here -->
   </div>
-
-  <script src="js/auth.js"></script>
-  <script src="js/game/main.js"></script>
-  <script>
-    const user = requireAuth();
-    if (user) {
-      document.getElementById('nav-username').textContent = user.username;
-      document.getElementById('hud-user').textContent = '👤 ' + user.username;
-    }
-  </script>
+  <script src="js/game/world.js"></script>
 </body>
 </html>
