@@ -1,26 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>CraftWorld — 3D Game</title>
-  <link rel="stylesheet" href="css/global.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CraftWorld — Play</title>
   <style>
-    body { margin: 0; overflow: hidden; }
-    #game-container { width: 100vw; height: 100vh; }
-    #world-grid { display: none; } /* Hide the 2D grid */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; font-family: 'VT323', monospace; }
+
+    .game-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 18px;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .nav-logo {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.75rem;
+      color: #4ade80;
+      text-decoration: none;
+    }
+    .nav-right { display: flex; align-items: center; gap: 14px; }
+    .nav-user  { font-size: 1.1rem; color: #ccc; }
+    .btn-logout {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid #555;
+      color: #ccc;
+      padding: 4px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-family: 'VT323', monospace;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-logout:hover { background: #ef4444; border-color: #ef4444; color: #fff; }
+
+    #game-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #hud {
+      position: fixed;
+      bottom: 16px; left: 50%;
+      transform: translateX(-50%);
+      color: #fff;
+      font-size: 1rem;
+      text-shadow: 1px 1px 3px #000;
+      pointer-events: none;
+      text-align: center;
+    }
+    #crosshair {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(255,255,255,0.7);
+      font-size: 1.4rem;
+      pointer-events: none;
+    }
   </style>
-  <!-- Load Three.js from a CDN -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
-  <!-- Optional: Add OrbitControls for camera movement -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-  <nav>
-    <a href="index.html">⛏ CraftWorld</a>
-    <a href="profile.html">My Profile</a>
+
+  <nav class="game-nav">
+    <a href="index.html" class="nav-logo">⛏ CraftWorld</a>
+    <div class="nav-right">
+      <span class="nav-user" id="nav-username"></span>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
   </nav>
-  <div id="game-container">
-    <!-- Three.js will render here -->
-  </div>
+
+  <div id="game-container"></div>
+  <div id="crosshair">+</div>
+  <div id="hud">🖱 Drag to look around &nbsp;|&nbsp; Scroll to zoom &nbsp;|&nbsp; Right-drag to pan</div>
+
+  <script src="js/auth.js"></script>
   <script src="js/game/world.js"></script>
+  <script>
+    const user = requireAuth();
+    if (user) document.getElementById('nav-username').textContent = '👤 ' + user.username;
+  </script>
 </body>
 </html>

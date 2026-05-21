@@ -1,164 +1,208 @@
-// Initialize Three.js scene, camera, and renderer
-let scene, camera, renderer, controls;
-let world = {}; // Store block types at each (x, y, z)
-const WORLD_SIZE = 64;
-const CUBE_SIZE = 1;
-const MAX_HEIGHT = 10; // Max height for terrain
+// world.js — 3D block world using Three.js + InstancedMesh for performance
 
-// Block types (colors)
-const blockColors = {
-  0: 0x000000, // Air (invisible)
-  1: 0x8B4513, // Dirt
-  2: 0x808080, // Stone
-  3: 0x1E90FF, // Water
-  4: 0x00FF00, // Grass
+const WORLD_SIZE = 64;
+const MAX_HEIGHT  = 14;
+const WATER_LEVEL = 3;
+
+const BLOCK = { AIR: 0, GRASS: 1, DIRT: 2, STONE: 3, WOOD: 4, LEAVES: 5, SAND: 6, WATER: 7 };
+
+const BLOCK_COLOR = {
+  [BLOCK.GRASS]:  0x5a9e32,
+  [BLOCK.DIRT]:   0x8B5E3C,
+  [BLOCK.STONE]:  0x888888,
+  [BLOCK.WOOD]:   0x6B4226,
+  [BLOCK.LEAVES]: 0x2d7a1a,
+  [BLOCK.SAND]:   0xd4b96a,
+  [BLOCK.WATER]:  0x2255aa,
 };
 
-function initThreeJS() {
-  // Create scene
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x000000);
+let scene, camera, renderer, controls;
+const blockMap = new Map();
 
-  // Create camera
-  camera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-  );
-  // Position camera higher and further back for better view
-  camera.position.set(WORLD_SIZE / 2, WORLD_SIZE, WORLD_SIZE * 1.5);
-
-  // Create renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  const container = document.getElementById('game-container');
-  container.innerHTML = ''; // Clear container
-  container.appendChild(renderer.domElement);
-
-  // Add OrbitControls (for mouse movement)
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
-  controls.screenSpacePanning = false;
-  controls.maxPolarAngle = Math.PI / 2 - 0.1; // Prevent camera from going below ground
-
-  // Add lights
-  const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-  scene.add(ambientLight);
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  directionalLight.position.set(100, 100, 50);
-  scene.add(directionalLight);
-
-  // Initialize world with terrain
-  initWorld();
-
-  // Start animation loop
-  animate();
+// ── Layered sine-wave noise for smooth hills ──────────────────────────────
+function heightNoise(x, z) {
+  const a = Math.sin(x * 0.07)  * Math.cos(z * 0.07)  * 4;
+  const b = Math.sin(x * 0.03)  * Math.cos(z * 0.03)  * 6;
+  const c = Math.sin(x * 0.15)  * Math.cos(z * 0.15)  * 1.5;
+  const d = Math.sin((x + z) * 0.05) * 2;
+  return a + b + c + d;
 }
 
-// Generate terrain height at (x, z)
-function generateTerrainHeight(x, z) {
-  // Simple noise: combine multiple sine waves for smoother terrain
-  const scale = 0.1;
-  const noise1 = Math.sin(x * scale) * Math.cos(z * scale);
-  const noise2 = Math.sin(x * scale * 0.5) * Math.cos(z * scale * 0.5) * 2;
-  const noise3 = Math.sin(x * scale * 2) * Math.cos(z * scale * 2) * 0.5;
-  let height = (noise1 + noise2 + noise3) * 2 + MAX_HEIGHT / 2;
-
-  // Clamp height between 0 and MAX_HEIGHT
-  height = Math.max(0, Math.min(MAX_HEIGHT, height));
-  return Math.floor(height);
+function terrainHeight(x, z) {
+  const raw = heightNoise(x, z) + MAX_HEIGHT / 2;
+  return Math.max(1, Math.min(MAX_HEIGHT, Math.round(raw)));
 }
 
-function initWorld() {
-  // Clear existing world data
-  world = {};
+// ── World generation ─────────────────────────────────────────────────────
+function generateWorld() {
+  blockMap.clear();
 
-  // Generate terrain
+  // Terrain
   for (let x = 0; x < WORLD_SIZE; x++) {
     for (let z = 0; z < WORLD_SIZE; z++) {
-      const height = generateTerrainHeight(x, z);
-      for (let y = 0; y <= height; y++) {
-        // Grass on top, dirt below
-        world[`${x},${y},${z}`] = y === height ? 4 : 1;
+      const h = terrainHeight(x, z);
+
+      for (let y = 0; y <= h; y++) {
+        let type;
+        if (y === h) {
+          type = h <= WATER_LEVEL + 1 ? BLOCK.SAND : BLOCK.GRASS;
+        } else if (y >= h - 3) {
+          type = BLOCK.DIRT;
+        } else {
+          type = BLOCK.STONE;
+        }
+        blockMap.set(`${x},${y},${z}`, type);
       }
-    }
-  }
-  renderWorld();
-}
 
-function renderWorld() {
-  // Clear existing cubes
-  while (scene.children.length > 2) {
-    scene.remove(scene.children[0]);
-  }
-
-  // Render all non-air blocks
-  for (let x = 0; x < WORLD_SIZE; x++) {
-    for (let y = 0; y < WORLD_SIZE; y++) {
-      for (let z = 0; z < WORLD_SIZE; z++) {
-        const blockType = world[`${x},${y},${z}`];
-        if (blockType !== 0) { // Skip air
-          const cube = new THREE.Mesh(
-            new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE),
-            new THREE.MeshPhongMaterial({ color: blockColors[blockType] })
-          );
-          cube.position.set(x, y, z);
-          scene.add(cube);
+      // Water fills low areas
+      if (h < WATER_LEVEL) {
+        for (let y = h + 1; y <= WATER_LEVEL; y++) {
+          blockMap.set(`${x},${y},${z}`, BLOCK.WATER);
         }
       }
     }
   }
-}
 
-function placeBlock(x, y, z, blockType) {
-  world[`${x},${y},${z}`] = blockType;
-  renderWorld();
-}
+  // Trees — only on grass above water level
+  let treeCount = 0;
+  const attempts = 200;
+  for (let i = 0; i < attempts && treeCount < 80; i++) {
+    const tx = 3 + Math.floor(Math.random() * (WORLD_SIZE - 6));
+    const tz = 3 + Math.floor(Math.random() * (WORLD_SIZE - 6));
+    const h  = terrainHeight(tx, tz);
+    if (h <= WATER_LEVEL + 1) continue;
 
-// Handle window resize
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+    const trunkH = 4 + Math.floor(Math.random() * 3);
+    const base   = h + 1;
 
-// Handle mouse click to place/remove blocks
-function onMouseClick(event) {
-  if (!controls) return;
+    // Trunk
+    for (let y = base; y < base + trunkH; y++) {
+      blockMap.set(`${tx},${y},${tz}`, BLOCK.WOOD);
+    }
 
-  const mouse = new THREE.Vector2();
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-  const raycaster = new THREE.Raycaster();
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(scene.children);
-
-  if (intersects.length > 0) {
-    const intersect = intersects[0];
-    const blockPos = intersect.object.position;
-    // Place a block next to the clicked block
-    placeBlock(
-      Math.floor(blockPos.x + 1),
-      Math.floor(blockPos.y),
-      Math.floor(blockPos.z),
-      1 // Dirt
-    );
+    // Leaf canopy — ellipsoid shape
+    const top = base + trunkH - 1;
+    for (let dy = -2; dy <= 2; dy++) {
+      for (let dx = -3; dx <= 3; dx++) {
+        for (let dz = -3; dz <= 3; dz++) {
+          const dist = (dx * dx) / 9 + (dy * dy) / 4 + (dz * dz) / 9;
+          if (dist <= 1.0) {
+            const key = `${tx + dx},${top + dy},${tz + dz}`;
+            if (!blockMap.has(key)) {
+              blockMap.set(key, BLOCK.LEAVES);
+            }
+          }
+        }
+      }
+    }
+    treeCount++;
   }
 }
 
-window.addEventListener('click', onMouseClick, false);
+// ── Build scene using InstancedMesh (one draw call per block type) ────────
+function buildScene() {
+  // Count how many blocks of each type
+  const counts = {};
+  for (const type of blockMap.values()) {
+    if (type === BLOCK.AIR) continue;
+    counts[type] = (counts[type] || 0) + 1;
+  }
 
-// Animation loop
+  const geo   = new THREE.BoxGeometry(1, 1, 1);
+  const dummy = new THREE.Object3D();
+  const iMeshes = {};
+
+  for (const [typeStr, count] of Object.entries(counts)) {
+    const type = parseInt(typeStr);
+    const mat  = new THREE.MeshLambertMaterial({
+      color:       BLOCK_COLOR[type],
+      transparent: type === BLOCK.WATER,
+      opacity:     type === BLOCK.WATER ? 0.65 : 1,
+    });
+    const mesh = new THREE.InstancedMesh(geo, mat, count);
+    mesh.castShadow    = type !== BLOCK.WATER;
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+    iMeshes[type] = { mesh, idx: 0 };
+  }
+
+  for (const [key, type] of blockMap.entries()) {
+    if (type === BLOCK.AIR) continue;
+    const [x, y, z] = key.split(',').map(Number);
+    dummy.position.set(x, y, z);
+    dummy.updateMatrix();
+    const entry = iMeshes[type];
+    entry.mesh.setMatrixAt(entry.idx++, dummy.matrix);
+  }
+
+  for (const { mesh } of Object.values(iMeshes)) {
+    mesh.instanceMatrix.needsUpdate = true;
+  }
+}
+
+// ── Three.js init ─────────────────────────────────────────────────────────
+function init() {
+  // Scene
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x87ceeb);
+  scene.fog = new THREE.FogExp2(0x87ceeb, 0.018);
+
+  // Camera
+  const cx = WORLD_SIZE / 2;
+  const cz = WORLD_SIZE / 2;
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 500);
+  camera.position.set(cx, 22, cz + 35);
+
+  // Renderer
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  document.getElementById('game-container').appendChild(renderer.domElement);
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const sun = new THREE.DirectionalLight(0xfffbe0, 1.0);
+  sun.position.set(60, 100, 40);
+  sun.castShadow = true;
+  scene.add(sun);
+
+  // Horizon haze plane
+  const hazeGeo = new THREE.PlaneGeometry(500, 500);
+  const hazeMat = new THREE.MeshBasicMaterial({ color: 0x87ceeb, transparent: true, opacity: 0.0 });
+  const haze = new THREE.Mesh(hazeGeo, hazeMat);
+  haze.rotation.x = -Math.PI / 2;
+  haze.position.y = -1;
+  scene.add(haze);
+
+  // OrbitControls
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(cx, MAX_HEIGHT / 2, cz);
+  controls.enableDamping  = true;
+  controls.dampingFactor  = 0.07;
+  controls.maxPolarAngle  = Math.PI / 2 - 0.02;
+  controls.minDistance    = 4;
+  controls.maxDistance    = 100;
+  controls.update();
+
+  // Resize
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // Generate and render world
+  generateWorld();
+  buildScene();
+
+  animate();
+}
+
 function animate() {
   requestAnimationFrame(animate);
-  if (controls) controls.update();
+  controls.update();
   renderer.render(scene, camera);
 }
 
-// Initialize and start the game
-window.addEventListener('load', () => {
-  initThreeJS();
-});
+window.addEventListener('load', init);
