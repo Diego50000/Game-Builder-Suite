@@ -138,7 +138,7 @@ function buildScene() {
     mesh.castShadow    = type!==BLOCK.WATER && type!==BLOCK.LEAVES;
     mesh.receiveShadow = true;
     for (let i=0;i<count;i++) {
-      dummy.position.set(coords[i*3], coords[i*3+1], coords[i*3+2]);
+      dummy.position.set(coords[i*3]+0.5, coords[i*3+1]+0.5, coords[i*3+2]+0.5);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
     }
@@ -219,8 +219,8 @@ function updatePlayer(dt) {
   const sinY = Math.sin(player.yaw);
   const cosY = Math.cos(player.yaw);
   let mx=0, mz=0;
-  if (keys['KeyW']||keys['ArrowUp'])    { mx+=sinY; mz+=cosY; }
-  if (keys['KeyS']||keys['ArrowDown'])  { mx-=sinY; mz-=cosY; }
+  if (keys['KeyW']||keys['ArrowUp'])    { mx-=sinY; mz-=cosY; }
+  if (keys['KeyS']||keys['ArrowDown'])  { mx+=sinY; mz+=cosY; }
   if (keys['KeyA']||keys['ArrowLeft'])  { mx-=cosY; mz+=sinY; }
   if (keys['KeyD']||keys['ArrowRight']) { mx+=cosY; mz-=sinY; }
   const len=Math.sqrt(mx*mx+mz*mz);
