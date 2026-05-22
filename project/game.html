@@ -5,99 +5,106 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CraftWorld — Play</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; overflow: hidden; font-family: 'VT323', monospace; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#000; overflow:hidden; font-family:'VT323',monospace; color:#fff; }
 
+    /* ── Nav ── */
     .game-nav {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 18px;
-      background: rgba(0,0,0,0.55);
-      backdrop-filter: blur(6px);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      position:fixed; top:0; left:0; right:0; z-index:20;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:6px 16px;
+      background:rgba(0,0,0,0.45); backdrop-filter:blur(6px);
+      border-bottom:1px solid rgba(255,255,255,0.07);
+      pointer-events:none;
     }
-    .nav-logo {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 0.75rem;
-      color: #4ade80;
-      text-decoration: none;
-    }
-    .nav-right { display: flex; align-items: center; gap: 14px; }
-    .nav-user  { font-size: 1.1rem; color: #ccc; }
+    .game-nav * { pointer-events:auto; }
+    .nav-logo { font-family:'Press Start 2P',monospace; font-size:0.7rem; color:#4ade80; text-decoration:none; }
+    .nav-right { display:flex; align-items:center; gap:12px; }
+    .nav-user  { font-size:1rem; color:#bbb; }
     .btn-logout {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid #555;
-      color: #ccc;
-      padding: 4px 14px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1rem;
-      font-family: 'VT323', monospace;
-      transition: background 0.2s, color 0.2s;
+      background:rgba(255,255,255,0.08); border:1px solid #555; color:#ccc;
+      padding:3px 12px; border-radius:4px; cursor:pointer;
+      font-size:0.95rem; font-family:'VT323',monospace;
+      transition:background .2s,color .2s;
     }
-    .btn-logout:hover { background: #ef4444; border-color: #ef4444; color: #fff; }
+    .btn-logout:hover { background:#ef4444; border-color:#ef4444; color:#fff; }
 
-    #game-container {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-    }
+    /* ── Game canvas ── */
+    #game-container { position:fixed; inset:0; }
 
-    #hud {
-      position: fixed;
-      bottom: 16px; left: 50%;
-      transform: translateX(-50%);
-      color: #fff;
-      font-size: 1rem;
-      text-shadow: 1px 1px 3px #000;
-      pointer-events: none;
-      text-align: center;
-    }
+    /* ── Crosshair ── */
     #crosshair {
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      color: rgba(255,255,255,0.7);
-      font-size: 1.4rem;
-      pointer-events: none;
+      position:fixed; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      font-size:1.4rem; color:rgba(255,255,255,0.85);
+      pointer-events:none; text-shadow:0 0 3px #000;
+      user-select:none;
     }
 
+    /* ── Lock hint (shown when pointer not locked) ── */
+    #lock-hint {
+      position:fixed; inset:0; z-index:15;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:10px; background:rgba(0,0,0,0.55); pointer-events:none;
+    }
+    #lock-hint p   { font-family:'Press Start 2P',monospace; font-size:0.75rem; color:#fff; line-height:1.8; text-align:center; }
+    #lock-hint kbd {
+      display:inline-block; background:#222; border:1px solid #555;
+      border-radius:4px; padding:2px 8px; font-size:0.85rem; color:#4ade80;
+    }
+
+    /* ── Toolbar ── */
+    #toolbar {
+      position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+      z-index:20; display:flex; gap:6px;
+    }
+    .tool-slot {
+      width:56px; height:56px;
+      background:rgba(0,0,0,0.6); border:2px solid #555;
+      border-radius:6px; cursor:pointer;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:2px; font-size:1.4rem; transition:border-color .15s,transform .1s;
+      user-select:none;
+    }
+    .tool-slot span { font-size:0.6rem; color:#aaa; font-family:'VT323',monospace; }
+    .tool-slot:hover  { border-color:#aaa; transform:translateY(-2px); }
+    .tool-slot.active { border-color:#4ade80; background:rgba(74,222,128,0.12); }
+
+    /* ── Controls hint ── */
+    #controls-hint {
+      position:fixed; top:48px; right:14px; z-index:20;
+      font-size:0.85rem; color:rgba(255,255,255,0.55);
+      line-height:1.7; text-align:right; pointer-events:none;
+    }
+
+    /* ── Loading screen ── */
     #loading-screen {
-      position: fixed;
-      inset: 0;
-      z-index: 100;
-      background: #0a0a0a;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      color: #4ade80;
-      font-family: 'Press Start 2P', monospace;
-      font-size: 0.85rem;
-      text-align: center;
+      position:fixed; inset:0; z-index:100;
+      background:#0a0a0a; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:18px;
     }
-    #loading-screen::after {
-      content: '';
-      width: 40px; height: 40px;
-      border: 4px solid #222;
-      border-top-color: #4ade80;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+    #loading-screen span {
+      font-family:'Press Start 2P',monospace; font-size:0.8rem; color:#4ade80;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width:40px; height:40px; border:4px solid #222;
+      border-top-color:#4ade80; border-radius:50%;
+      animation:spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
+  <!-- Loading -->
+  <div id="loading-screen">
+    <span>Generating World…</span>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Nav -->
   <nav class="game-nav">
     <a href="index.html" class="nav-logo">⛏ CraftWorld</a>
     <div class="nav-right">
@@ -106,10 +113,45 @@
     </div>
   </nav>
 
-  <div id="loading-screen">Generating World…</div>
+  <!-- Lock hint overlay -->
+  <div id="lock-hint">
+    <p>Click to play</p>
+    <p>
+      <kbd>W A S D</kbd> Move &nbsp;
+      <kbd>Space</kbd> Jump &nbsp;
+      <kbd>Shift</kbd> Sprint<br/>
+      <kbd>Left click</kbd> Break &nbsp;
+      <kbd>Right click</kbd> Place &nbsp;
+      <kbd>1–6</kbd> Select block<br/>
+      <kbd>ESC</kbd> Release mouse
+    </p>
+  </div>
+
+  <!-- 3D canvas -->
   <div id="game-container"></div>
+
+  <!-- Crosshair -->
   <div id="crosshair">+</div>
-  <div id="hud">🖱 Drag to look around &nbsp;|&nbsp; Scroll to zoom &nbsp;|&nbsp; Right-drag to pan</div>
+
+  <!-- Controls reminder (top-right) -->
+  <div id="controls-hint">
+    WASD · move<br/>
+    Space · jump<br/>
+    Shift · sprint<br/>
+    LMB · break<br/>
+    RMB · place<br/>
+    1–6 · block
+  </div>
+
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <div class="tool-slot active" data-block="1">🟩<span>Grass</span></div>
+    <div class="tool-slot"        data-block="2">🟫<span>Dirt</span></div>
+    <div class="tool-slot"        data-block="3">⬜<span>Stone</span></div>
+    <div class="tool-slot"        data-block="4">🟤<span>Wood</span></div>
+    <div class="tool-slot"        data-block="5">🌿<span>Leaves</span></div>
+    <div class="tool-slot"        data-block="6">🟨<span>Sand</span></div>
+  </div>
 
   <script src="js/auth.js"></script>
   <script src="js/game/world.js"></script>
