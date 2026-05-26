@@ -1,6 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-  redirectIfLoggedIn('game.html');
-
   const form        = document.getElementById('register-form');
   const errorMsg    = document.getElementById('error-msg');
   const successMsg  = document.getElementById('success-msg');

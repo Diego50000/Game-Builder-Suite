@@ -1,6 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-  redirectIfLoggedIn('game.html');
-
   const errorMsg   = document.getElementById('error-msg');
   const successMsg = document.getElementById('success-msg');
   const btn        = document.getElementById('login-btn');
