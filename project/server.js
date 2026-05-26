@@ -1,20 +1,20 @@
-// server.js — CraftWorld backend
-// Handles user registration, login, and data saving to JSON files
+// server.js — CraftWorld Backend
+// Handles user registration, login, profile updates, mobs, and worlds
 // Run with: node server.js
 
 const express = require('express');
-const fs      = require('fs');
-const path    = require('path');
-const cors    = require('cors');
+const fs = require('fs');
+const path = require('path');
+const cors = require('cors');
 require('dotenv').config();
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname))); // serve all HTML/CSS/JS files
+app.use(express.static(path.join(__dirname))); // Serve all HTML/CSS/JS files
 
 // ── File paths ────────────────────────────────────────────────────────────────
 const USERS_FILE = path.join(__dirname, 'data', 'users.json');
@@ -41,59 +41,79 @@ function writeUsers(users) {
   }
 }
 
-// ── Routes ────────────────────────────────────────────────────────────────────
+// ── Routes ──────────────────────────────────────────────────────────────────--
 
-// GET /game/users — admin only, returns all users (no passwords)
-app.get('/game/users', (req, res) => {
+// ===== USER ROUTES =====
+// GET /api/users — Fetch a single user's data (by userId)
+app.get('/api/users', (req, res) => {
+  const { userId } = req.query;
+  if (!userId) {
+    return res.status(400).json({ success: false, message: 'userId is required.' });
+  }
+
   const users = readUsers();
-  const safe  = users.map(({ password, ...rest }) => rest);
+  const user = users.find(u => u.id === userId);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  }
+
+  // Return user without password
+  const { password, ...safeUser } = user;
+  res.json({ success: true, user: safeUser });
+});
+
+// GET /api/users/all — Admin only, returns all users (no passwords)
+app.get('/api/users/all', (req, res) => {
+  const users = readUsers();
+  const safe = users.map(({ password, ...rest }) => rest);
   res.json({ success: true, users: safe });
 });
 
-// POST /game/register
-app.post('/game/register', (req, res) => {
+// POST /api/register — Register a new user
+app.post('/api/register', (req, res) => {
   const { username, email, password } = req.body;
 
   if (!username || !email || !password) {
-    return res.json({ success: false, message: 'All fields are required.' });
+    return res.status(400).json({ success: false, message: 'All fields are required.' });
   }
 
   if (username.length < 3) {
-    return res.json({ success: false, message: 'Username must be at least 3 characters.' });
+    return res.status(400).json({ success: false, message: 'Username must be at least 3 characters.' });
   }
 
   if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-    return res.json({ success: false, message: 'Username can only contain letters, numbers, and underscores.' });
+    return res.status(400).json({ success: false, message: 'Username can only contain letters, numbers, and underscores.' });
   }
 
   if (password.length < 4) {
-    return res.json({ success: false, message: 'Password must be at least 4 characters.' });
+    return res.status(400).json({ success: false, message: 'Password must be at least 4 characters.' });
   }
 
   const users = readUsers();
 
   if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
-    return res.json({ success: false, message: 'That username is already taken.' });
+    return res.status(400).json({ success: false, message: 'That username is already taken.' });
   }
 
   if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-    return res.json({ success: false, message: 'An account with that email already exists.' });
+    return res.status(400).json({ success: false, message: 'An account with that email already exists.' });
   }
 
   const newUser = {
-    id:        'user_' + Date.now(),
+    id: 'user_' + Date.now(),
     username,
     email,
     password,
-    role:      'player',
+    role: 'player',
     createdAt: new Date().toISOString().split('T')[0],
     profile: {
-      avatar:       '🧑',
-      bio:          '',
-      playtime:     0,
-      blocksMined:  0,
-      zombiesKilled:0,
-      customMobs:   [],
+      avatar: '🧑',
+      bio: '',
+      playtime: 0,
+      blocksMined: 0,
+      zombiesKilled: 0,
+      customMobs: [],
+      worlds: [],
       achievements: []
     }
   };
@@ -102,48 +122,47 @@ app.post('/game/register', (req, res) => {
   const saved = writeUsers(users);
 
   if (!saved) {
-    return res.json({ success: false, message: 'Server error: could not save user.' });
+    return res.status(500).json({ success: false, message: 'Server error: could not save user.' });
   }
 
-  // Return user without password
   const { password: _pw, ...safeUser } = newUser;
   res.json({ success: true, user: safeUser });
 });
 
-// POST /game/login
-app.post('/game/login', (req, res) => {
+// POST /api/login — Log in a user
+app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.json({ success: false, message: 'All fields are required.' });
+    return res.status(400).json({ success: false, message: 'All fields are required.' });
   }
 
   const users = readUsers();
-  const user  = users.find(
+  const user = users.find(
     u => u.username.toLowerCase() === username.toLowerCase() && u.password === password
   );
 
   if (!user) {
-    return res.json({ success: false, message: 'Invalid username or password.' });
+    return res.status(401).json({ success: false, message: 'Invalid username or password.' });
   }
 
   const { password: _pw, ...safeUser } = user;
   res.json({ success: true, user: safeUser });
 });
 
-// POST /game/update-profile — save profile changes
-app.post('/game/update-profile', (req, res) => {
+// POST /api/update-profile — Update user profile
+app.post('/api/update-profile', (req, res) => {
   const { id, profile } = req.body;
 
   if (!id) {
-    return res.json({ success: false, message: 'User ID required.' });
+    return res.status(400).json({ success: false, message: 'User ID required.' });
   }
 
   const users = readUsers();
   const index = users.findIndex(u => u.id === id);
 
   if (index === -1) {
-    return res.json({ success: false, message: 'User not found.' });
+    return res.status(404).json({ success: false, message: 'User not found.' });
   }
 
   users[index].profile = { ...users[index].profile, ...profile };
@@ -153,22 +172,23 @@ app.post('/game/update-profile', (req, res) => {
   res.json({ success: true, user: safeUser });
 });
 
-// POST /game/save-mob — save a custom AI mob to a user's profile
-app.post('/game/save-mob', (req, res) => {
+// ===== MOB ROUTES =====
+// POST /api/save-mob — Save a custom mob to a user's profile
+app.post('/api/save-mob', (req, res) => {
   const { userId, mob } = req.body;
 
   if (!userId || !mob) {
-    return res.json({ success: false, message: 'userId and mob are required.' });
+    return res.status(400).json({ success: false, message: 'userId and mob are required.' });
   }
 
   const users = readUsers();
   const index = users.findIndex(u => u.id === userId);
 
   if (index === -1) {
-    return res.json({ success: false, message: 'User not found.' });
+    return res.status(404).json({ success: false, message: 'User not found.' });
   }
 
-  mob.id        = 'mob_' + Date.now();
+  mob.id = 'mob_' + Date.now();
   mob.createdAt = new Date().toISOString().split('T')[0];
   users[index].profile.customMobs.push(mob);
   writeUsers(users);
@@ -176,26 +196,122 @@ app.post('/game/save-mob', (req, res) => {
   res.json({ success: true, mob });
 });
 
-// POST /game/admin/update-user — admin updates a user's role or data
-app.post('/game/admin/update-user', (req, res) => {
+// ===== WORLD ROUTES =====
+// POST /api/save-world — Save a user's world
+app.post('/api/save-world', (req, res) => {
+  const { userId, world } = req.body;
+
+  if (!userId || !world) {
+    return res.status(400).json({ success: false, message: 'userId and world are required.' });
+  }
+
+  const users = readUsers();
+  const index = users.findIndex(u => u.id === userId);
+
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  }
+
+  // Initialize worlds array if it doesn't exist
+  if (!users[index].profile.worlds) {
+    users[index].profile.worlds = [];
+  }
+
+  // Add or update the world
+  const worldIndex = users[index].profile.worlds.findIndex(w => w.id === world.id);
+  if (worldIndex >= 0) {
+    users[index].profile.worlds[worldIndex] = world; // Update existing
+  } else {
+    users[index].profile.worlds.push(world); // Add new
+  }
+
+  writeUsers(users);
+  res.json({ success: true, world });
+});
+
+// GET /api/load-world — Load a user's world
+app.get('/api/load-world', (req, res) => {
+  const { userId, worldId } = req.query;
+
+  if (!userId || !worldId) {
+    return res.status(400).json({ success: false, message: 'userId and worldId are required.' });
+  }
+
+  const users = readUsers();
+  const user = users.find(u => u.id === userId);
+
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  }
+
+  const world = user.profile.worlds?.find(w => w.id === worldId);
+  if (!world) {
+    return res.status(404).json({ success: false, message: 'World not found.' });
+  }
+
+  res.json({ success: true, world });
+});
+
+// ===== ADMIN ROUTES =====
+// POST /api/admin/update-user — Admin updates a user's role or data
+app.post('/api/admin/update-user', (req, res) => {
   const { adminId, targetId, updates } = req.body;
 
   const users = readUsers();
   const admin = users.find(u => u.id === adminId);
 
   if (!admin || admin.role !== 'admin') {
-    return res.json({ success: false, message: 'Unauthorized.' });
+    return res.status(403).json({ success: false, message: 'Unauthorized.' });
   }
 
   const index = users.findIndex(u => u.id === targetId);
   if (index === -1) {
-    return res.json({ success: false, message: 'Target user not found.' });
+    return res.status(404).json({ success: false, message: 'Target user not found.' });
   }
 
   users[index] = { ...users[index], ...updates };
   writeUsers(users);
 
   res.json({ success: true });
+});
+
+// ===== BACKWARD COMPATIBILITY: /game/* ROUTES =====
+// Alias all /api/* routes to /game/* for backward compatibility
+app.get('/game/users', (req, res) => {
+  // Redirect to /api/users/all for backward compatibility
+  const users = readUsers();
+  const safe = users.map(({ password, ...rest }) => rest);
+  res.json({ success: true, users: safe });
+});
+
+app.post('/game/register', (req, res) => {
+  // Redirect to /api/register
+  const { username, email, password } = req.body;
+  res.redirect(307, '/api/register');
+});
+
+app.post('/game/login', (req, res) => {
+  // Redirect to /api/login
+  const { username, password } = req.body;
+  res.redirect(307, '/api/login');
+});
+
+app.post('/game/update-profile', (req, res) => {
+  // Redirect to /api/update-profile
+  const { id, profile } = req.body;
+  res.redirect(307, '/api/update-profile');
+});
+
+app.post('/game/save-mob', (req, res) => {
+  // Redirect to /api/save-mob
+  const { userId, mob } = req.body;
+  res.redirect(307, '/api/save-mob');
+});
+
+app.post('/game/admin/update-user', (req, res) => {
+  // Redirect to /api/admin/update-user
+  const { adminId, targetId, updates } = req.body;
+  res.redirect(307, '/api/admin/update-user');
 });
 
 // ── Start server ──────────────────────────────────────────────────────────────
