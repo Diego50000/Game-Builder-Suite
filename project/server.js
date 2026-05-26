@@ -275,43 +275,96 @@ app.post('/api/admin/update-user', (req, res) => {
   res.json({ success: true });
 });
 
-// ===== BACKWARD COMPATIBILITY: /game/* ROUTES =====
-// Alias all /api/* routes to /game/* for backward compatibility
+// ===== /game/* ROUTES (active — /api/ is proxied away by Replit) =====
+
 app.get('/game/users', (req, res) => {
-  // Redirect to /api/users/all for backward compatibility
   const users = readUsers();
   const safe = users.map(({ password, ...rest }) => rest);
   res.json({ success: true, users: safe });
 });
 
 app.post('/game/register', (req, res) => {
-  // Redirect to /api/register
   const { username, email, password } = req.body;
-  res.redirect(307, '/api/register');
+  if (!username || !email || !password)
+    return res.status(400).json({ success: false, message: 'All fields are required.' });
+  if (username.length < 3)
+    return res.status(400).json({ success: false, message: 'Username must be at least 3 characters.' });
+  if (!/^[a-zA-Z0-9_]+$/.test(username))
+    return res.status(400).json({ success: false, message: 'Username can only contain letters, numbers, and underscores.' });
+  if (password.length < 4)
+    return res.status(400).json({ success: false, message: 'Password must be at least 4 characters.' });
+
+  const users = readUsers();
+  if (users.find(u => u.username.toLowerCase() === username.toLowerCase()))
+    return res.status(400).json({ success: false, message: 'That username is already taken.' });
+  if (users.find(u => u.email.toLowerCase() === email.toLowerCase()))
+    return res.status(400).json({ success: false, message: 'An account with that email already exists.' });
+
+  const newUser = {
+    id: 'user_' + Date.now(), username, email, password, role: 'player',
+    createdAt: new Date().toISOString().split('T')[0],
+    profile: { avatar: '🧑', bio: '', playtime: 0, blocksMined: 0, zombiesKilled: 0, customMobs: [], worlds: [], achievements: [] }
+  };
+  users.push(newUser);
+  if (!writeUsers(users))
+    return res.status(500).json({ success: false, message: 'Server error: could not save user.' });
+  const { password: _pw, ...safeUser } = newUser;
+  res.json({ success: true, user: safeUser });
 });
 
 app.post('/game/login', (req, res) => {
-  // Redirect to /api/login
   const { username, password } = req.body;
-  res.redirect(307, '/api/login');
+  if (!username || !password)
+    return res.status(400).json({ success: false, message: 'All fields are required.' });
+  const users = readUsers();
+  const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+  if (!user)
+    return res.status(401).json({ success: false, message: 'Invalid username or password.' });
+  const { password: _pw, ...safeUser } = user;
+  res.json({ success: true, user: safeUser });
 });
 
 app.post('/game/update-profile', (req, res) => {
-  // Redirect to /api/update-profile
   const { id, profile } = req.body;
-  res.redirect(307, '/api/update-profile');
+  if (!id)
+    return res.status(400).json({ success: false, message: 'User ID required.' });
+  const users = readUsers();
+  const index = users.findIndex(u => u.id === id);
+  if (index === -1)
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  users[index].profile = { ...users[index].profile, ...profile };
+  writeUsers(users);
+  const { password: _pw, ...safeUser } = users[index];
+  res.json({ success: true, user: safeUser });
 });
 
 app.post('/game/save-mob', (req, res) => {
-  // Redirect to /api/save-mob
   const { userId, mob } = req.body;
-  res.redirect(307, '/api/save-mob');
+  if (!userId || !mob)
+    return res.status(400).json({ success: false, message: 'userId and mob are required.' });
+  const users = readUsers();
+  const index = users.findIndex(u => u.id === userId);
+  if (index === -1)
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  mob.id = 'mob_' + Date.now();
+  mob.createdAt = new Date().toISOString().split('T')[0];
+  users[index].profile.customMobs.push(mob);
+  writeUsers(users);
+  res.json({ success: true, mob });
 });
 
 app.post('/game/admin/update-user', (req, res) => {
-  // Redirect to /api/admin/update-user
   const { adminId, targetId, updates } = req.body;
-  res.redirect(307, '/api/admin/update-user');
+  const users = readUsers();
+  const admin = users.find(u => u.id === adminId);
+  if (!admin || admin.role !== 'admin')
+    return res.status(403).json({ success: false, message: 'Unauthorized.' });
+  const index = users.findIndex(u => u.id === targetId);
+  if (index === -1)
+    return res.status(404).json({ success: false, message: 'Target user not found.' });
+  users[index] = { ...users[index], ...updates };
+  writeUsers(users);
+  res.json({ success: true });
 });
 
 // ── Start server ──────────────────────────────────────────────────────────────
