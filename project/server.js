@@ -304,6 +304,19 @@ app.get('/game/users', (req, res) => {
   res.json({ success: true, users: safe });
 });
 
+// GET /game/user?userId=... — fetch one user's full (password-free) data
+app.get('/game/user', (req, res) => {
+  const { userId } = req.query;
+  if (!userId)
+    return res.status(400).json({ success: false, message: 'userId required.' });
+  const users = readUsers();
+  const user  = users.find(u => u.id === userId);
+  if (!user)
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  const { password: _pw, ...safeUser } = user;
+  res.json({ success: true, user: safeUser });
+});
+
 app.post('/game/register', (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password)

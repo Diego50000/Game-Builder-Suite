@@ -1,150 +1,172 @@
-// profile.js — Load and display user profile, stats, and leaderboards
-// Uses auth.js for session management
+// profile.js — Fetches live data from the server on every load
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const user = requireAuth();
-  if (!user) return;
+  const session = requireAuth();
+  if (!session) return;
+
+  // Show placeholder while loading
+  document.getElementById('profile-username').textContent = session.username;
 
   try {
-    // Fetch profile stats and leaderboards in parallel
-    const [profileResponse, blocksMinedLb, zombiesKilledLb, playtimeLb] = await Promise.all([
-      fetch(`/game/profile?userId=${user.id}`),
-      fetch('/game/leaderboard?type=blocksMined'),
-      fetch('/game/leaderboard?type=zombiesKilled'),
-      fetch('/game/leaderboard?type=playtime')
+    // Fetch fresh user data + leaderboard in parallel
+    const [userRes, lbRes] = await Promise.all([
+      fetch(`/game/user?userId=${session.id}`),
+      fetch('/game/leaderboard'),
     ]);
+    const userResult = await userRes.json();
+    const lbResult   = await lbRes.json();
 
-    const profileResult = await profileResponse.json();
-    const blocksMinedLbData = await blocksMinedLb.json();
-    const zombiesKilledLbData = await zombiesKilledLb.json();
-    const playtimeLbData = await playtimeLb.json();
-
-    if (!profileResult.success) {
-      console.error('Failed to load profile:', profileResult.message);
+    if (!userResult.success) {
+      console.error('Could not load user:', userResult.message);
+      renderProfile(session, lbResult.players || []);
       return;
     }
 
-    const profile = profileResult.profile || {
-      playtime: 0,
-      blocksMined: 0,
-      zombiesKilled: 0,
-      lastActive: 'Never'
-    };
+    // Update session so other pages stay fresh
+    setCurrentUser(userResult.user);
 
-    renderProfile(user, profile, {
-      blocksMined: blocksMinedLbData.leaderboard || [],
-      zombiesKilled: zombiesKilledLbData.leaderboard || [],
-      playtime: playtimeLbData.leaderboard || []
-    });
+    renderProfile(userResult.user, lbResult.players || []);
+    setupBioEditor(userResult.user.id);
 
-    setupEventListeners(user.id, profile);
   } catch (err) {
     console.error('Network error:', err);
-    alert('Failed to load profile. Please try again.');
+    // Fall back to session data so the page isn't blank
+    renderProfile(session, []);
+    setupBioEditor(session.id);
   }
 });
 
-function renderProfile(user, profile, leaderboards) {
-  // Basic info
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderProfile(user, lbPlayers) {
+  const p = user.profile || {};
+
   document.getElementById('profile-username').textContent = user.username;
-  document.getElementById('profile-email').textContent = user.email;
-  document.getElementById('profile-avatar').textContent = user.profile?.avatar || '🧑';
+  document.getElementById('profile-email').textContent    = user.email || '';
+  document.getElementById('profile-avatar').textContent   = p.avatar || '🧑';
+  document.getElementById('profile-bio').textContent      = p.bio || "This user hasn't written a bio yet.";
 
-  // Bio
-  const bio = user.profile?.bio || 'This user hasn\'t written a bio yet.';
-  document.getElementById('profile-bio').textContent = bio;
+  // ── Stats ──
+  document.getElementById('stat-playtime').textContent      = formatPlaytime(p.playtime || 0);
+  document.getElementById('stat-blocks-mined').textContent  = (p.blocksMined   || 0).toLocaleString();
+  document.getElementById('stat-zombies-killed').textContent = (p.zombiesKilled || 0).toLocaleString();
+  document.getElementById('stat-worlds').textContent        = (p.worlds?.length || 0);
 
-  // Stats
-  document.getElementById('stat-playtime').textContent = formatPlaytime(profile.playtime || 0);
-  document.getElementById('stat-blocks-mined').textContent = profile.blocksMined || 0;
-  document.getElementById('stat-zombies-killed').textContent = profile.zombiesKilled || 0;
-  document.getElementById('stat-worlds').textContent = user.profile?.worlds?.length || 0;
-
-  // Worlds list
-  const worldsContainer = document.getElementById('worlds-container');
-  if (user.profile?.worlds && user.profile.worlds.length > 0) {
-    worldsContainer.innerHTML = '';
-    user.profile.worlds.forEach(world => {
-      const worldItem = document.createElement('div');
-      worldItem.className = 'world-item';
-      worldItem.innerHTML = `
-        <span>${world.name || 'Unnamed World'}</span>
-        <a href="game.html?worldId=${world.id}">Play</a>
-      `;
-      worldsContainer.appendChild(worldItem);
+  // ── Worlds ──
+  const worldsEl = document.getElementById('worlds-container');
+  if (p.worlds && p.worlds.length > 0) {
+    worldsEl.innerHTML = '';
+    p.worlds.forEach(w => {
+      const div = document.createElement('div');
+      div.className = 'world-item';
+      div.innerHTML = `<span>${w.name || 'Unnamed World'}</span><a href="game.html?worldId=${w.id}">Play</a>`;
+      worldsEl.appendChild(div);
     });
+  } else {
+    worldsEl.innerHTML = '<p>No worlds yet. <a href="game.html">Create one!</a></p>';
   }
 
-  // Mobs list
-  const mobsContainer = document.getElementById('mobs-container');
-  if (user.profile?.customMobs && user.profile.customMobs.length > 0) {
-    mobsContainer.innerHTML = '';
-    user.profile.customMobs.forEach(mob => {
-      const mobItem = document.createElement('div');
-      mobItem.className = 'mob-item';
-      mobItem.innerHTML = `
-        <span>${mob.name || 'Unnamed Mob'}</span>
-        <span>${mob.health || 'N/A'} HP</span>
-      `;
-      mobsContainer.appendChild(mobItem);
+  // ── Custom mobs ──
+  const mobsEl = document.getElementById('mobs-container');
+  if (p.customMobs && p.customMobs.length > 0) {
+    mobsEl.innerHTML = '';
+    p.customMobs.forEach(mob => {
+      const div = document.createElement('div');
+      div.className = 'mob-item';
+      div.innerHTML = `<span>${mob.name || 'Unnamed Mob'}</span><span>${mob.health || 'N/A'} HP</span>`;
+      mobsEl.appendChild(div);
     });
+  } else {
+    mobsEl.innerHTML = '<p>No custom mobs yet.</p>';
   }
 
-  // Leaderboards
-  const lbContainer = document.createElement('div');
-  lbContainer.className = 'leaderboard-container';
-  lbContainer.innerHTML = '<h3>🏆 Global Leaderboards</h3>';
-
-  for (const [type, lb] of Object.entries(leaderboards)) {
-    if (lb.length > 0) {
-      const lbSection = document.createElement('div');
-      lbSection.className = 'leaderboard-section';
-      lbSection.innerHTML = `<h4>${type.replace(/([A-Z])/g, ' $1')}</h4>`;
-      const lbList = document.createElement('ol');
-      lb.forEach((entry, index) => {
-        const li = document.createElement('li');
-        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
-        li.innerHTML = `${medal} <strong>${entry.username}</strong>: ${entry.value}`;
-        lbList.appendChild(li);
-      });
-      lbSection.appendChild(lbList);
-      lbContainer.appendChild(lbSection);
-    }
-  }
-
-  document.querySelector('.profile-container').appendChild(lbContainer);
+  // ── Leaderboard ──
+  renderLeaderboard(lbPlayers, user.username);
 }
 
-// Helper: Format playtime in seconds to a readable string
-function formatPlaytime(seconds) {
-  if (seconds < 60) return `${seconds} sec`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} min`;
-  return `${Math.floor(seconds / 3600)} hours`;
+function renderLeaderboard(players, currentUsername) {
+  // Remove old leaderboard if re-rendering
+  const old = document.getElementById('leaderboard-section');
+  if (old) old.remove();
+
+  if (!players || players.length === 0) return;
+
+  const container = document.querySelector('.profile-container');
+  const section   = document.createElement('div');
+  section.id        = 'leaderboard-section';
+  section.className = 'worlds-list';
+  section.style.marginTop = '20px';
+
+  section.innerHTML = `
+    <h3>🏆 Leaderboard</h3>
+    <table style="width:100%;border-collapse:collapse;font-family:'VT323',monospace;font-size:1.1rem;">
+      <thead>
+        <tr style="color:#4ade80;text-align:left;border-bottom:1px solid rgba(255,255,255,0.15);">
+          <th style="padding:6px 8px;">#</th>
+          <th style="padding:6px 8px;">Player</th>
+          <th style="padding:6px 8px;">⛏ Blocks</th>
+          <th style="padding:6px 8px;">🧟 Kills</th>
+          <th style="padding:6px 8px;">⏱ Playtime</th>
+        </tr>
+      </thead>
+      <tbody id="lb-body"></tbody>
+    </table>`;
+
+  container.appendChild(section);
+
+  const tbody = document.getElementById('lb-body');
+  const medals = ['🥇','🥈','🥉'];
+
+  players.forEach((p, i) => {
+    const isMe = p.username === currentUsername;
+    const tr   = document.createElement('tr');
+    tr.style.cssText = `background:${isMe ? 'rgba(74,222,128,0.1)' : 'transparent'};
+      border-bottom:1px solid rgba(255,255,255,0.06);`;
+    tr.innerHTML = `
+      <td style="padding:5px 8px;">${medals[i] || i+1}</td>
+      <td style="padding:5px 8px;${isMe ? 'color:#4ade80;font-weight:bold;' : ''}">${p.username}</td>
+      <td style="padding:5px 8px;">${(p.blocksMined || 0).toLocaleString()}</td>
+      <td style="padding:5px 8px;">${(p.zombiesKilled || 0).toLocaleString()}</td>
+      <td style="padding:5px 8px;">${formatPlaytime(p.playtime || 0)}</td>`;
+    tbody.appendChild(tr);
+  });
 }
 
-function setupEventListeners(userId, profile) {
-  const editBioBtn = document.getElementById('edit-bio-btn');
-  const saveBioBtn = document.getElementById('save-bio-btn');
-  const bioTextarea = document.getElementById('bio-textarea');
-  const profileBio = document.getElementById('profile-bio');
+// ── Bio editor ────────────────────────────────────────────────────────────────
+function setupBioEditor(userId) {
+  const editBtn   = document.getElementById('edit-bio-btn');
+  const saveBtn   = document.getElementById('save-bio-btn');
+  const textarea  = document.getElementById('bio-textarea');
+  const bioText   = document.getElementById('profile-bio');
 
-  editBioBtn.addEventListener('click', () => {
-    bioTextarea.style.display = 'block';
-    saveBioBtn.style.display = 'block';
-    editBioBtn.style.display = 'none';
-    bioTextarea.value = profileBio.textContent;
+  editBtn.addEventListener('click', () => {
+    textarea.value        = bioText.textContent;
+    textarea.style.display = 'block';
+    saveBtn.style.display  = 'block';
+    editBtn.style.display  = 'none';
   });
 
-  saveBioBtn.addEventListener('click', async () => {
-    const newBio = bioTextarea.value;
-    const result = await updateProfile(userId, { bio: newBio });
+  saveBtn.addEventListener('click', async () => {
+    saveBtn.textContent = 'Saving…';
+    saveBtn.disabled    = true;
+    const result = await updateProfile(userId, { bio: textarea.value });
     if (result.success) {
-      profileBio.textContent = newBio;
-      bioTextarea.style.display = 'none';
-      saveBioBtn.style.display = 'none';
-      editBioBtn.style.display = 'block';
+      bioText.textContent    = textarea.value;
+      textarea.style.display = 'none';
+      saveBtn.style.display  = 'none';
+      editBtn.style.display  = 'block';
     } else {
-      alert('Failed to update bio: ' + result.message);
+      alert('Failed to save bio: ' + (result.message || 'Unknown error'));
     }
+    saveBtn.textContent = 'Save Bio';
+    saveBtn.disabled    = false;
   });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function formatPlaytime(seconds) {
+  if (!seconds || seconds < 60) return `${Math.floor(seconds || 0)}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
