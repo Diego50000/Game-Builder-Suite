@@ -1,4 +1,4 @@
-// world.js — First-person block world with Three.js
+// world.js — First-person block world with live stats tracking
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const WORLD_SIZE  = 64;
@@ -9,6 +9,7 @@ const JUMP_FORCE  = 8;
 const MOVE_SPEED  = 5;
 const REACH       = 5.5;
 const MOUSE_SENS  = 0.002;
+const STAT_SAVE_INTERVAL = 30; // seconds between playtime saves
 
 const BLOCK = { AIR:0, GRASS:1, DIRT:2, STONE:3, WOOD:4, LEAVES:5, SAND:6, WATER:7 };
 const SOLID = new Set([BLOCK.GRASS, BLOCK.DIRT, BLOCK.STONE, BLOCK.WOOD, BLOCK.SAND]);
@@ -23,10 +24,16 @@ const BLOCK_COLOR = {
   [BLOCK.WATER]:  0x3366cc,
 };
 
-// ── State ────────────────────────────────────────────────────────────────────
+// ── Session stats (tracked locally, flushed to server periodically) ───────────
+const sessionStats = { blocksMined: 0, zombiesKilled: 0, playtimeSeconds: 0 };
+let statTimer       = 0;   // seconds since last save
+let playtimeAccum   = 0;   // seconds of unsaved playtime
+let statsInitialised = false;
+
+// ── Three.js / world state ───────────────────────────────────────────────────
 let scene, camera, renderer;
 let highlightMesh;
-const blockMap   = new Map();
+const blockMap    = new Map();
 const worldMeshes = [];
 
 const player = { x:32, y:16, z:32, vx:0, vy:0, vz:0, yaw:0, pitch:0, onGround:false };
@@ -88,7 +95,6 @@ function generateWorld() {
     placed++;
   }
 
-  // Spawn player on top of terrain at centre
   const cx = Math.floor(WORLD_SIZE/2);
   const cz = Math.floor(WORLD_SIZE/2);
   player.x = cx+0.5;
@@ -106,7 +112,7 @@ function isExposed(x, y, z) {
   return false;
 }
 
-// ── Build / rebuild scene meshes ─────────────────────────────────────────────
+// ── Build / rebuild scene ────────────────────────────────────────────────────
 function clearMeshes() {
   for (const m of worldMeshes) { scene.remove(m); m.geometry.dispose(); m.material.dispose(); }
   worldMeshes.length = 0;
@@ -148,7 +154,7 @@ function buildScene() {
   }
 }
 
-// ── Raycast (DDA step) ───────────────────────────────────────────────────────
+// ── Raycast ───────────────────────────────────────────────────────────────────
 function raycast() {
   const dir = new THREE.Vector3();
   camera.getWorldDirection(dir);
@@ -167,19 +173,23 @@ function raycast() {
   return { hit:false };
 }
 
-// ── Block break / place ──────────────────────────────────────────────────────
+// ── Block break / place ───────────────────────────────────────────────────────
 function breakBlock() {
   const r = raycast();
   if (!r.hit) return;
   blockMap.delete(`${r.bx},${r.by},${r.bz}`);
   buildScene();
   updateHighlight();
+  // ── Track stat ──
+  sessionStats.blocksMined++;
+  playtimeAccum += 0; // no extra playtime for breaking
+  flushStat('blocksMined', 1);
+  updateHUD();
 }
 
 function placeBlock() {
   const r = raycast();
   if (!r.hit || r.px===null) return;
-  // Don't place inside the player
   if (r.px===Math.floor(player.x) && r.py===Math.floor(player.y) && r.pz===Math.floor(player.z)) return;
   if (r.px===Math.floor(player.x) && r.py===Math.floor(player.y+1) && r.pz===Math.floor(player.z)) return;
   blockMap.set(`${r.px},${r.py},${r.pz}`, selectedBlock);
@@ -187,7 +197,14 @@ function placeBlock() {
   updateHighlight();
 }
 
-// ── Block highlight wireframe ─────────────────────────────────────────────────
+// ── Mob kill hook (call this whenever a mob dies) ─────────────────────────────
+function recordMobKill() {
+  sessionStats.zombiesKilled++;
+  flushStat('zombiesKilled', 1);
+  updateHUD();
+}
+
+// ── Highlight ─────────────────────────────────────────────────────────────────
 function updateHighlight() {
   const r = raycast();
   if (r.hit) {
@@ -198,24 +215,23 @@ function updateHighlight() {
   }
 }
 
-// ── Collision ────────────────────────────────────────────────────────────────
+// ── Collision ─────────────────────────────────────────────────────────────────
 function isSolid(x, y, z) {
   return SOLID.has(blockMap.get(`${Math.floor(x)},${Math.floor(y)},${Math.floor(z)}`));
 }
 
 function collidesWithWorld() {
   const hw=0.3, hh=1.8;
-  for (let dx of [-hw, hw]) for (let dz of [-hw, hw]) for (let dy of [0, hh*0.5, hh]) {
+  for (const dx of [-hw, hw]) for (const dz of [-hw, hw]) for (const dy of [0, hh*0.5, hh]) {
     if (isSolid(player.x+dx, player.y+dy, player.z+dz)) return true;
   }
   return false;
 }
 
-// ── Player update ────────────────────────────────────────────────────────────
+// ── Player update ─────────────────────────────────────────────────────────────
 function updatePlayer(dt) {
-  if (dt > 0.1) dt = 0.1; // cap delta
+  if (dt > 0.1) dt = 0.1;
 
-  // Movement direction from yaw
   const sinY = Math.sin(player.yaw);
   const cosY = Math.cos(player.yaw);
   let mx=0, mz=0;
@@ -230,46 +246,82 @@ function updatePlayer(dt) {
   player.vx = mx*speed;
   player.vz = mz*speed;
 
-  // Gravity
   player.vy += GRAVITY*dt;
 
-  // Jump
   if ((keys['Space']||keys['KeySpace']) && player.onGround) {
     player.vy=JUMP_FORCE;
     player.onGround=false;
   }
 
-  // Move X
   player.x += player.vx*dt;
   if (collidesWithWorld()) { player.x -= player.vx*dt; player.vx=0; }
 
-  // Move Z
   player.z += player.vz*dt;
   if (collidesWithWorld()) { player.z -= player.vz*dt; player.vz=0; }
 
-  // Move Y
   player.y += player.vy*dt;
   if (collidesWithWorld()) {
-    if (player.vy<0) { player.onGround=true; }
+    if (player.vy<0) player.onGround=true;
     player.y -= player.vy*dt;
     player.vy=0;
   } else {
     player.onGround=false;
   }
 
-  // World bounds clamp
   player.x = Math.max(0.5, Math.min(WORLD_SIZE-0.5, player.x));
   player.z = Math.max(0.5, Math.min(WORLD_SIZE-0.5, player.z));
   if (player.y < -5) { player.y=terrainHeight(Math.floor(player.x),Math.floor(player.z))+2; player.vy=0; }
 
-  // Update camera
   camera.position.set(player.x, player.y+1.62, player.z);
   camera.rotation.order='YXZ';
   camera.rotation.y=player.yaw;
   camera.rotation.x=player.pitch;
 }
 
-// ── Pointer lock ─────────────────────────────────────────────────────────────
+// ── Stats: server communication ───────────────────────────────────────────────
+async function flushStat(key, amount) {
+  const user = getCurrentUser();
+  if (!user) return;
+  try {
+    await fetch('/game/update-stats', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ userId: user.id, [key]: amount }),
+    });
+  } catch (_) {}
+}
+
+async function flushPlaytime() {
+  if (playtimeAccum <= 0) return;
+  const secs = Math.floor(playtimeAccum);
+  playtimeAccum = 0;
+  await flushStat('playtime', secs);
+}
+
+function updateStatTimer(dt) {
+  playtimeAccum += dt;
+  sessionStats.playtimeSeconds += dt;
+  statTimer += dt;
+  if (statTimer >= STAT_SAVE_INTERVAL) {
+    statTimer = 0;
+    flushPlaytime();
+    updateHUD();
+  }
+}
+
+// ── HUD (session stats overlay) ───────────────────────────────────────────────
+function updateHUD() {
+  const el = document.getElementById('stats-hud');
+  if (!el) return;
+  const mins = Math.floor(sessionStats.playtimeSeconds / 60);
+  const secs = Math.floor(sessionStats.playtimeSeconds % 60);
+  el.innerHTML =
+    `⛏ ${sessionStats.blocksMined}&nbsp;&nbsp;` +
+    `🧟 ${sessionStats.zombiesKilled}&nbsp;&nbsp;` +
+    `⏱ ${mins}:${String(secs).padStart(2,'0')}`;
+}
+
+// ── Pointer lock ───────────────────────────────────────────────────────────────
 function initPointerLock() {
   const canvas = renderer.domElement;
   canvas.addEventListener('click', () => {
@@ -313,7 +365,7 @@ function initToolbar() {
   });
 }
 
-// ── Input ────────────────────────────────────────────────────────────────────
+// ── Input ─────────────────────────────────────────────────────────────────────
 function initInput() {
   document.addEventListener('keydown', e => { keys[e.code]=true; e.preventDefault(); });
   document.addEventListener('keyup',   e => { keys[e.code]=false; });
@@ -334,7 +386,6 @@ function init() {
   renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
   document.getElementById('game-container').appendChild(renderer.domElement);
 
-  // Lights
   scene.add(new THREE.AmbientLight(0xffffff, 0.6));
   const sun = new THREE.DirectionalLight(0xfffbe0, 0.9);
   sun.position.set(50,80,30);
@@ -345,7 +396,6 @@ function init() {
   sun.shadow.camera.far=200;
   scene.add(sun);
 
-  // Block highlight wireframe
   highlightMesh = new THREE.LineSegments(
     new THREE.EdgesGeometry(new THREE.BoxGeometry(1.02,1.02,1.02)),
     new THREE.LineBasicMaterial({ color:0x000000, linewidth:2 })
@@ -359,6 +409,9 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
+  // Save remaining playtime when tab closes
+  window.addEventListener('beforeunload', () => { flushPlaytime(); });
+
   initInput();
   initPointerLock();
   initToolbar();
@@ -368,6 +421,7 @@ function init() {
     generateWorld();
     buildScene();
     hideLoading();
+    updateHUD();
     lastTime = performance.now();
     animate();
   }, 50);
@@ -381,6 +435,7 @@ function animate() {
     updatePlayer(dt);
     updateHighlight();
   }
+  updateStatTimer(dt); // always tick playtime, even when paused
   renderer.render(scene, camera);
 }
 

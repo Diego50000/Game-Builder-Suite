@@ -10,8 +10,8 @@
       "profile": {
         "avatar": "🧑",
         "bio": "1",
-        "playtime": 0,
-        "blocksMined": 0,
+        "playtime": 30,
+        "blocksMined": 3,
         "zombiesKilled": 0,
         "customMobs": [],
         "achievements": []
@@ -31,6 +31,24 @@
         "blocksMined": 0,
         "zombiesKilled": 0,
         "customMobs": [],
+        "achievements": []
+      }
+    },
+    {
+      "id": "user_1779818227238",
+      "username": "cap",
+      "email": "9@gamil.com",
+      "password": "1111",
+      "role": "player",
+      "createdAt": "2026-05-26",
+      "profile": {
+        "avatar": "🧑",
+        "bio": "",
+        "playtime": 0,
+        "blocksMined": 0,
+        "zombiesKilled": 0,
+        "customMobs": [],
+        "worlds": [],
         "achievements": []
       }
     }

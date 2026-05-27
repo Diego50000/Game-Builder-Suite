@@ -70,6 +70,15 @@
     .tool-slot:hover  { border-color:#aaa; transform:translateY(-2px); }
     .tool-slot.active { border-color:#4ade80; background:rgba(74,222,128,0.12); }
 
+    /* ── Stats HUD ── */
+    #stats-hud {
+      position:fixed; top:48px; left:50%; transform:translateX(-50%);
+      z-index:20; background:rgba(0,0,0,0.5); border-radius:6px;
+      padding:4px 14px; font-size:1rem; color:#fff;
+      font-family:'VT323',monospace; letter-spacing:0.05em;
+      pointer-events:none; white-space:nowrap;
+    }
+
     /* ── Controls hint ── */
     #controls-hint {
       position:fixed; top:48px; right:14px; z-index:20;
@@ -126,6 +135,9 @@
       <kbd>ESC</kbd> Release mouse
     </p>
   </div>
+
+  <!-- Session stats HUD -->
+  <div id="stats-hud">⛏ 0 &nbsp; 🧟 0 &nbsp; ⏱ 0:00</div>
 
   <!-- 3D canvas -->
   <div id="game-container"></div>

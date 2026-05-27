@@ -275,6 +275,27 @@ app.post('/api/admin/update-user', (req, res) => {
   res.json({ success: true });
 });
 
+// ── Leaderboard helper ────────────────────────────────────────────────────────
+const LEADERBOARD_FILE = path.join(__dirname, 'data', 'leaderboard.json');
+
+function rebuildLeaderboard(users) {
+  const players = users
+    .map(u => ({
+      username:      u.username,
+      blocksMined:   u.profile?.blocksMined   || 0,
+      zombiesKilled: u.profile?.zombiesKilled || 0,
+      playtime:      u.profile?.playtime      || 0,
+      score: (u.profile?.blocksMined || 0) + (u.profile?.zombiesKilled || 0) * 10,
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  try {
+    fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify({ lastUpdated: new Date().toISOString(), players }, null, 2));
+  } catch (e) {
+    console.error('Could not write leaderboard.json:', e.message);
+  }
+}
+
 // ===== /game/* ROUTES (active — /api/ is proxied away by Replit) =====
 
 app.get('/game/users', (req, res) => {
@@ -351,6 +372,43 @@ app.post('/game/save-mob', (req, res) => {
   users[index].profile.customMobs.push(mob);
   writeUsers(users);
   res.json({ success: true, mob });
+});
+
+// POST /game/update-stats — increment blocksMined, zombiesKilled, playtime
+app.post('/game/update-stats', (req, res) => {
+  const { userId, blocksMined, zombiesKilled, playtime } = req.body;
+  if (!userId)
+    return res.status(400).json({ success: false, message: 'userId required.' });
+
+  const users = readUsers();
+  const index = users.findIndex(u => u.id === userId);
+  if (index === -1)
+    return res.status(404).json({ success: false, message: 'User not found.' });
+
+  if (!users[index].profile) users[index].profile = {};
+  if (blocksMined)   users[index].profile.blocksMined   = (users[index].profile.blocksMined   || 0) + blocksMined;
+  if (zombiesKilled) users[index].profile.zombiesKilled = (users[index].profile.zombiesKilled || 0) + zombiesKilled;
+  if (playtime)      users[index].profile.playtime      = (users[index].profile.playtime      || 0) + playtime;
+
+  writeUsers(users);
+  rebuildLeaderboard(users);
+
+  const { password: _pw, ...safeUser } = users[index];
+  res.json({ success: true, user: safeUser });
+});
+
+// GET /game/leaderboard — return sorted leaderboard
+app.get('/game/leaderboard', (req, res) => {
+  try {
+    const raw = fs.readFileSync(LEADERBOARD_FILE, 'utf8');
+    res.json({ success: true, ...JSON.parse(raw) });
+  } catch {
+    // Build from users if file missing/empty
+    const users = readUsers();
+    rebuildLeaderboard(users);
+    const raw = fs.readFileSync(LEADERBOARD_FILE, 'utf8');
+    res.json({ success: true, ...JSON.parse(raw) });
+  }
 });
 
 app.post('/game/admin/update-user', (req, res) => {

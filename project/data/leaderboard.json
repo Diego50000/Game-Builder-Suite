@@ -1,0 +1,26 @@
+{
+  "lastUpdated": "2026-05-27T17:27:54.564Z",
+  "players": [
+    {
+      "username": "SuperToady",
+      "blocksMined": 3,
+      "zombiesKilled": 0,
+      "playtime": 30,
+      "score": 3
+    },
+    {
+      "username": "SUP",
+      "blocksMined": 0,
+      "zombiesKilled": 0,
+      "playtime": 0,
+      "score": 0
+    },
+    {
+      "username": "cap",
+      "blocksMined": 0,
+      "zombiesKilled": 0,
+      "playtime": 0,
+      "score": 0
+    }
+  ]
+}
