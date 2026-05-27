@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CraftWorld — Leaderboard</title>
+  <link rel="stylesheet" href="css/global.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+  <style>
+    body { min-height: 100vh; background: var(--bg); }
+
+    /* ── Nav ── */
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 28px;
+      background: var(--bg2); border-bottom: 2px solid var(--border);
+    }
+    .nav-logo {
+      font-family: var(--font-pixel); font-size: 0.7rem; color: var(--accent2);
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 20px; align-items: center; }
+    .nav-links a {
+      font-family: var(--font-body); font-size: 1.1rem; color: var(--text-muted);
+      text-decoration: none; transition: color .2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--text); }
+    .nav-links a.active { color: var(--accent2); }
+
+    /* ── Page header ── */
+    .page-header {
+      text-align: center; padding: 48px 20px 24px;
+    }
+    .page-header h1 {
+      font-family: var(--font-pixel); font-size: 1.1rem;
+      color: var(--accent2); margin-bottom: 8px;
+    }
+    .page-header p { color: var(--text-muted); font-size: 1.1rem; }
+
+    /* ── Tab bar ── */
+    .tabs {
+      display: flex; justify-content: center; gap: 10px;
+      padding: 0 20px 24px;
+    }
+    .tab-btn {
+      background: var(--bg2); border: 2px solid var(--border);
+      color: var(--text-muted); font-family: var(--font-body);
+      font-size: 1.1rem; padding: 6px 20px; border-radius: var(--radius);
+      cursor: pointer; transition: border-color .2s, color .2s, background .2s;
+    }
+    .tab-btn:hover  { border-color: var(--text-muted); color: var(--text); }
+    .tab-btn.active {
+      border-color: var(--accent2); color: var(--accent2);
+      background: rgba(74,166,70,.1);
+    }
+
+    /* ── Table card ── */
+    .lb-card {
+      max-width: 760px; margin: 0 auto 60px; padding: 0 16px;
+    }
+    .lb-table {
+      width: 100%; border-collapse: collapse;
+      background: var(--bg2); border: 2px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+    }
+    .lb-table thead tr {
+      background: var(--bg3); border-bottom: 2px solid var(--border);
+    }
+    .lb-table th {
+      font-family: var(--font-pixel); font-size: 0.45rem; color: var(--accent2);
+      padding: 12px 16px; text-align: left; letter-spacing: .04em;
+    }
+    .lb-table td {
+      font-family: var(--font-body); font-size: 1.15rem; color: var(--text);
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+    }
+    .lb-table tbody tr:last-child td { border-bottom: none; }
+    .lb-table tbody tr:hover { background: rgba(255,255,255,.03); }
+    .lb-table tbody tr.is-me { background: rgba(74,166,70,.08); }
+    .lb-table tbody tr.is-me td.player-name { color: var(--accent2); font-weight: bold; }
+
+    .rank-cell   { width: 52px; text-align: center; font-size: 1.4rem; }
+    .player-name { font-size: 1.2rem; }
+    .stat-cell   { color: var(--text-muted); }
+    .stat-cell.highlight { color: var(--text); }
+
+    /* ── Loading / empty ── */
+    .lb-status {
+      text-align: center; padding: 48px 20px;
+      color: var(--text-muted); font-size: 1.1rem;
+    }
+    .spinner {
+      width: 32px; height: 32px; border: 3px solid var(--border);
+      border-top-color: var(--accent2); border-radius: 50%;
+      animation: spin .7s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Last-updated footer ── */
+    .lb-footer {
+      text-align: center; color: var(--text-muted);
+      font-size: 0.9rem; padding-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">⛏ CraftWorld</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="game.html">Play</a>
+      <a href="profile.html">Profile</a>
+      <a href="leaderboard.html" class="active">Leaderboard</a>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <h1>🏆 Leaderboard</h1>
+    <p>Top players ranked by their achievements</p>
+  </div>
+
+  <!-- Sort tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" data-sort="score">Overall</button>
+    <button class="tab-btn" data-sort="blocksMined">⛏ Blocks</button>
+    <button class="tab-btn" data-sort="zombiesKilled">🧟 Kills</button>
+    <button class="tab-btn" data-sort="playtime">⏱ Playtime</button>
+  </div>
+
+  <div class="lb-card">
+    <div id="lb-status" class="lb-status">
+      <div class="spinner"></div>
+      Loading…
+    </div>
+    <table class="lb-table" id="lb-table" style="display:none;">
+      <thead>
+        <tr>
+          <th class="rank-cell">Rank</th>
+          <th>Player</th>
+          <th id="col-score">Score</th>
+          <th id="col-blocks">⛏ Blocks</th>
+          <th id="col-kills">🧟 Kills</th>
+          <th id="col-playtime">⏱ Playtime</th>
+        </tr>
+      </thead>
+      <tbody id="lb-body"></tbody>
+    </table>
+    <p class="lb-footer" id="lb-footer"></p>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/leaderboard.js"></script>
+</body>
+</html>
