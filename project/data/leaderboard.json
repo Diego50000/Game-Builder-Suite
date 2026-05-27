@@ -1,26 +1,31 @@
 {
-  "lastUpdated": "2026-05-27T17:54:21.981Z",
-  "players": [
+  "blocksMined": [
     {
+      "userId": "user_1779300813838",
       "username": "SuperToady",
-      "blocksMined": 88,
-      "zombiesKilled": 0,
-      "playtime": 127,
-      "score": 88
+      "value": 136,
+      "lastUpdated": "2026-05-27T18:00:46.845Z"
     },
     {
+      "userId": "user_1779818227238",
       "username": "cap",
-      "blocksMined": 24,
-      "zombiesKilled": 0,
-      "playtime": 10,
-      "score": 24
+      "value": 24,
+      "lastUpdated": "2026-05-27T18:00:46.845Z"
+    }
+  ],
+  "zombiesKilled": [],
+  "playtime": [
+    {
+      "userId": "user_1779300813838",
+      "username": "SuperToady",
+      "value": 145,
+      "lastUpdated": "2026-05-27T18:00:46.845Z"
     },
     {
-      "username": "SUP",
-      "blocksMined": 0,
-      "zombiesKilled": 0,
-      "playtime": 0,
-      "score": 0
+      "userId": "user_1779818227238",
+      "username": "cap",
+      "value": 10,
+      "lastUpdated": "2026-05-27T18:00:46.845Z"
     }
   ]
 }
