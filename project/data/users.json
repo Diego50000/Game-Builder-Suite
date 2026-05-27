@@ -5,13 +5,13 @@
       "username": "SuperToady",
       "email": "394212@guhsd.net",
       "password": "1111",
-      "role": "player",
+      "role": "admin",
       "createdAt": "2026-05-20",
       "profile": {
         "avatar": "🧑",
         "bio": "1",
-        "playtime": 93,
-        "blocksMined": 48,
+        "playtime": 127,
+        "blocksMined": 88,
         "zombiesKilled": 0,
         "customMobs": [],
         "achievements": []
